@@ -5,22 +5,32 @@ from graph import Graph
 class ReliabilityEvaluator(Graph):
 
 	def generate_x_y(self, min_n, max_n, p):
+		"""
+		Генерация точек для построения графа.
+
+		:param min_n: Минимальное количество узлов (int)
+		:param max_n: Максимальное количество узлов (int)
+		:param p: Параметр для расчета надежности (float)
+		:return: Кортеж из массивов x и y для построения графика
+		"""
 		x = np.arange(min_n, max_n + 1)
 		y = np.empty_like(x, dtype=float)
 		for i in range(min_n, max_n + 1):
 			reliable = 0
 			self._inputs(i, p)
-			print()
 			for j in range(10):
 				self._generate_graph()
 				reliable += self._reliability_calculation()
-				print(self._reliability_calculation())
-			result = reliable /10
+			result = reliable / 10
 			y[i - min_n] = result
 		return x, y
 
-
 	def find_node_with_most_connections(self):
+		"""
+		Поиск точки сочленения.
+
+		:return: Номер узла с наибольшим количеством связей
+		"""
 		max_connections = 0
 		node_with_most_connections = None
 
@@ -33,6 +43,11 @@ class ReliabilityEvaluator(Graph):
 		return node_with_most_connections
 
 	def _reliability_calculation(self):
+		"""
+		Расчет оценки надежности.
+
+		:return: Значение оценки надежности
+		"""
 		connections = 0
 
 		for i, row in enumerate(self.graph):

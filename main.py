@@ -79,7 +79,7 @@ class MyApp(QMainWindow, Ui_MainWindow):
 		self.ax.set_xlabel("Число узлов")
 		self.ax.set_ylabel("Оценка надежности")
 		self.canvas.draw()
-	def build_graph_in_main_window(self, min_v=None, max_v=None, p=None, reliablities=None):
+	def build_graph_in_main_window(self, min_v=None, max_v=None, p=None):
 		# Инициализация объекта Figure и холста для графика
 		self.figure, self.ax = self.init_plot()
 		self.canvas = FigureCanvas(self.figure)
@@ -87,14 +87,14 @@ class MyApp(QMainWindow, Ui_MainWindow):
 		self.graph_layout = QVBoxLayout(self.graph)
 		self.graph_layout.addWidget(self.canvas)
 
-		self.plot_example(min_v, max_v, p, reliablities)
+		self.plot_example(min_v, max_v, p)
 
 	def init_plot(self):
 		figure = Figure()
 		ax = figure.add_subplot(111)
 		return figure, ax
 
-	def plot_example(self, min_value=None, max_value=None, p=None, reliabilities=None):
+	def plot_example(self, min_value=None, max_value=None, p=None):
 		g = ReliabilityEvaluator()
 		x, y = g.generate_x_y(min_n=min_value, max_n=max_value, p=p)
 		self.ax.plot(x, y)
@@ -116,6 +116,8 @@ class MyApp(QMainWindow, Ui_MainWindow):
 			print("OK")
 			print("Values:", min_v, max_v, p)
 			self.get_values(min_v, max_v, p)
+			print(self.min_nodes, self.max_nodes, self.parameter)
+			self.build_graph_in_main_window(self.min_nodes, self.max_nodes,self.parameter)
 			# Закрытие виджета после обработки данных
 			# input_params_dialog.close()
 		else:

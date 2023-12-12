@@ -1,7 +1,6 @@
 import sys
-import numpy as np
-from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QPushButton, QWidget, QDialog, QFileDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QFileDialog, \
+	QMessageBox
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
@@ -17,13 +16,49 @@ class MyApp(QMainWindow, Ui_MainWindow):
 		self.min_nodes = None
 		self.max_nodes = None
 		self.parameter = None
+		self.points = None
+
+		# Initialize canvas and layout
+		self.figure, self.ax = self.init_plot()
+		self.canvas = FigureCanvas(self.figure)
+		self.graph_layout = QVBoxLayout(self.graph)
+		self.graph_layout.addWidget(self.canvas)
 
 		self.input_parameters.clicked.connect(self.show_input_params)
-		# self.save_in_file.clicked.connect(self.save_in_file)
 		self.open_file.clicked.connect(self.open_file_dialog)
+		self.save_in_file.clicked.connect(self.save_info_in_file)
 
-	def save_in_file(self):
-		pass
+	def save_info_in_file(self):
+		if self.min_nodes is None and self.max_nodes is None and self.parameter is None:
+			QMessageBox.warning(self.parent(), "Ошибка сохранения информации в файл", "Нечего сохранять. Сначала сгенерируйте граф", QMessageBox.Ok)
+			return
+
+		options = QFileDialog.Options()
+		options |= QFileDialog.DontUseNativeDialog
+		file_path, _ = QFileDialog.getSaveFileName(self.parent(), "Сохранить файл", "", "Text Files (*.txt);;All Files (*)",
+		                                           options=options)
+
+		# If the user canceled the file dialog, return
+		if not file_path:
+			return
+
+		try:
+			# Open the selected file for writing
+			with open(file_path, 'w') as file:
+				# Write parameters on the first line
+				file.write(f"{self.min_nodes} {self.max_nodes}\n")
+
+				# Write points on the next line
+				file.write(" ".join(map(str, self.points)))
+
+			QMessageBox.information(self.parent(), "Информация сохранена", "Информация успешно сохранена в файл",
+			                        QMessageBox.Ok)
+
+		except Exception as e:
+			QMessageBox.warning(self.parent(), "Ошибка сохранения информации в файл",
+			                    f"Произошла ошибка при сохранении файла: {str(e)}", QMessageBox.Ok)
+
+
 	def open_file_dialog(self):
 		options = QFileDialog.Options()
 		options |= QFileDialog.ReadOnly
@@ -51,26 +86,29 @@ class MyApp(QMainWindow, Ui_MainWindow):
 
 		except Exception as e:
 			print("Error reading file:", e)
+			QMessageBox.warning(self.parent(), "Ошибка чтения файла", f"Произошла ошибка при чтении файла: {str(e)}",
+			                    QMessageBox.Ok)
 
 	def get_values(self, min_v, max_v, p):
-		self.min_nodes = min_v
-		self.max_nodes = max_v
-		self.parameter = p
+		self.min_nodes = int(min_v)
+		self.max_nodes = int(max_v)
+		self.parameter = float(p)
 
 	def build_graph_from_file(self, min_v=None, max_v=None, reliablities=None):
 		# Инициализация объекта Figure и холста для графика
-		self.figure, self.ax = self.init_plot()
-		self.canvas = FigureCanvas(self.figure)
-
-		self.graph_layout = QVBoxLayout(self.graph)
-		self.graph_layout.addWidget(self.canvas)
+		# self.figure, self.ax = self.init_plot()
+		# self.canvas = FigureCanvas(self.figure)
+		#
+		# self.graph_layout = QVBoxLayout(self.graph)
+		# self.graph_layout.addWidget(self.canvas)
 
 		self.plot_from_file(min_v, max_v, reliablities)
 
 
 	def plot_from_file(self, min_value=None, max_value=None, reliabilities=None):
+		self.ax.clear()  # Clear existing plot
 		x, y = [], []
-		for i in range(min_value, max_value+1):
+		for i in range(min_value, max_value + 1):
 			x.append(i)
 		for i in reliabilities:
 			y.append(i)
@@ -79,24 +117,27 @@ class MyApp(QMainWindow, Ui_MainWindow):
 		self.ax.set_xlabel("Число узлов")
 		self.ax.set_ylabel("Оценка надежности")
 		self.canvas.draw()
+
 	def build_graph_in_main_window(self, min_v=None, max_v=None, p=None):
 		# Инициализация объекта Figure и холста для графика
-		self.figure, self.ax = self.init_plot()
-		self.canvas = FigureCanvas(self.figure)
+		# self.figure, self.ax = self.init_plot()
+		# self.canvas = FigureCanvas(self.figure)
+		#
+		# self.graph_layout = QVBoxLayout(self.graph)
+		# self.graph_layout.addWidget(self.canvas)
 
-		self.graph_layout = QVBoxLayout(self.graph)
-		self.graph_layout.addWidget(self.canvas)
-
-		self.plot_example(min_v, max_v, p)
+		self.plot(min_v, max_v, p)
 
 	def init_plot(self):
 		figure = Figure()
 		ax = figure.add_subplot(111)
 		return figure, ax
 
-	def plot_example(self, min_value=None, max_value=None, p=None):
+	def plot(self, min_value=None, max_value=None, p=None):
+		self.ax.clear()  # Clear existing plot
 		g = ReliabilityEvaluator()
 		x, y = g.generate_x_y(min_n=min_value, max_n=max_value, p=p)
+		self.points = y
 		self.ax.plot(x, y)
 		self.ax.set_title("График зависимости оценки надежности от числа узлов")
 		self.ax.set_xlabel("Число узлов")
@@ -106,20 +147,12 @@ class MyApp(QMainWindow, Ui_MainWindow):
 
 	def show_input_params(self):
 		input_params_dialog = InputParamsWidget()
-		# input_params_ui = InputParamsWidget()
-		# input_params_ui.setupUi(input_params_dialog)
 		input_params_dialog.exec()
-
 
 		min_v, max_v, p = input_params_dialog.get_values()
 		if min_v is not None and max_v is not None and p is not None:
-			print("OK")
-			print("Values:", min_v, max_v, p)
 			self.get_values(min_v, max_v, p)
-			print(self.min_nodes, self.max_nodes, self.parameter)
 			self.build_graph_in_main_window(self.min_nodes, self.max_nodes,self.parameter)
-			# Закрытие виджета после обработки данных
-			# input_params_dialog.close()
 		else:
 			print("Failed")
 

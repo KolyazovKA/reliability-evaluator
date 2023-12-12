@@ -1,19 +1,22 @@
-from random import randint
-
 import numpy as np
-
 from graph import Graph
 
 
 class ReliabilityEvaluator(Graph):
 
 	def generate_x_y(self, min_n, max_n, p):
-		x = np.arange(min_n, max_n)
+		x = np.arange(min_n, max_n + 1)
 		y = np.empty_like(x, dtype=float)
-		for i in range(min_n, max_n):
+		for i in range(min_n, max_n + 1):
+			reliable = 0
 			self._inputs(i, p)
-			self._generate_graph()
-			y[i - min_n] = self._reliability_calculation()
+			print()
+			for j in range(10):
+				self._generate_graph()
+				reliable += self._reliability_calculation()
+				print(self._reliability_calculation())
+			result = reliable /10
+			y[i - min_n] = result
 		return x, y
 
 
@@ -36,7 +39,7 @@ class ReliabilityEvaluator(Graph):
 			if i != self.find_node_with_most_connections():
 				connections += sum(row)
 
-		return (connections / (self.nodes * (self.nodes - 1)))
+		return connections / (self.nodes * (self.nodes - 1))
 
 
 def main():
